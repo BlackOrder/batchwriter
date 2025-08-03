@@ -171,10 +171,10 @@ func BenchmarkFilterOutByIndices(b *testing.B) {
 
 func BenchmarkJitter(b *testing.B) {
 	base := 100 * time.Millisecond
-	max := 1 * time.Second
+	maxDuration := 1 * time.Second
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = jitter(base, max)
+		_ = jitter(base, maxDuration)
 	}
 }

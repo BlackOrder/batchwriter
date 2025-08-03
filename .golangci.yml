@@ -1,0 +1,107 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  govet:
+    enable:
+      - shadow
+  revive:
+    confidence: 0.8
+  gocyclo:
+    min-complexity: 25
+  dupl:
+    threshold: 150
+  goconst:
+    min-len: 3
+    min-occurrences: 4
+  misspell:
+    locale: US
+  lll:
+    line-length: 120
+  goimports:
+    local-prefixes: github.com/blackorder/batchwriter
+  funlen:
+    lines: 100
+    statements: 60
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+    disabled-checks:
+      - wrapperFunc
+      - dupImport
+      - hugeParam
+
+linters:
+  enable:
+    - bodyclose
+    - dupl
+    - errcheck
+    - exhaustive
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nolintlint
+    - revive
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  
+  disable:
+    - mnd
+
+issues:
+  exclude-dirs:
+    - vendor
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - goconst
+
+    - path: main\.go
+      linters:
+        - funlen
+      
+    - text: "Use of weak random number generator"
+      linters:
+        - gosec
+        
+    - text: "G306.*0o644"
+      linters:
+        - gosec
+
+    - text: "shadow: declaration of \"err\""
+      linters:
+        - govet
+
+  new: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

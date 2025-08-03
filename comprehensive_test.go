@@ -12,24 +12,6 @@ import (
 
 // Test comprehensive error scenarios and edge cases not covered in other tests
 
-// slowTestSink simulates a slow sink for timeout testing
-type slowTestSink struct {
-	delay time.Duration
-	dumps []dumpCall
-	mu    sync.Mutex
-}
-
-func (s *slowTestSink) Dump(reason string, cause error, batch []any) {
-	time.Sleep(s.delay) // Simulate slow operation
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.dumps = append(s.dumps, dumpCall{reason, cause, batch})
-}
-
-func (s *slowTestSink) Close() error {
-	return nil
-}
-
 func TestInsertWithRetryComprehensive(t *testing.T) {
 	// This test covers more retry scenarios to improve insertWithRetry coverage
 	coll := setupTestMongo(t)

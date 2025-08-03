@@ -328,25 +328,25 @@ func TestSinkAdapterEdgeCases(t *testing.T) {
 func TestJitterDistribution(t *testing.T) {
 	// Test jitter function more thoroughly
 	base := 100 * time.Millisecond
-	max := 200 * time.Millisecond
+	maxDuration := 200 * time.Millisecond
 
 	// Test many iterations to verify distribution
 	var total time.Duration
 	samples := 1000
 
 	for i := 0; i < samples; i++ {
-		result := jitter(base, max)
+		result := jitter(base, maxDuration)
 		total += result
 
 		// Each result should be within bounds
-		if result < 0 || result > max {
-			t.Errorf("Jitter result %v out of bounds [0, %v]", result, max)
+		if result < 0 || result > maxDuration {
+			t.Errorf("Jitter result %v out of bounds [0, %v]", result, maxDuration)
 		}
 	}
 
 	// Average should be reasonable (around base time, but can vary due to max cap)
 	average := total / time.Duration(samples)
-	t.Logf("Jitter average over %d samples: %v (base: %v, max: %v)", samples, average, base, max)
+	t.Logf("Jitter average over %d samples: %v (base: %v, max: %v)", samples, average, base, maxDuration)
 
 	// Test edge case: base > max
 	veryLarge := 1 * time.Second

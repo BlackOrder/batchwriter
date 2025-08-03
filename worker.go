@@ -146,10 +146,10 @@ func filterOutByIndices[T any](in []T, drop map[int]struct{}) []T {
 
 // jitter returns a duration that is randomly adjusted by up to ±25%
 // while respecting the provided maximum
-func jitter(d time.Duration, max time.Duration) time.Duration {
+func jitter(d, maxDuration time.Duration) time.Duration {
 	// Cap at maximum if needed
-	if d > max {
-		d = max
+	if d > maxDuration {
+		d = maxDuration
 	}
 
 	// Generate a random factor between 0.75 and 1.25
@@ -157,8 +157,8 @@ func jitter(d time.Duration, max time.Duration) time.Duration {
 
 	// Apply the factor and ensure we don't exceed max
 	result := time.Duration(float64(d) * factor)
-	if result > max {
-		return max
+	if result > maxDuration {
+		return maxDuration
 	}
 	return result
 }

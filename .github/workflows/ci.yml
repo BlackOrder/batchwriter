@@ -1,0 +1,165 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      matrix:
+        go-version: [1.22.x, 1.23.x, 1.24.x]
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+        cache-dependency-path: |
+          go.mod
+          **/go.mod
+          go.sum
+          **/go.sum
+    - name: Download dependencies
+      run: go mod download
+    - name: Verify dependencies
+      run: go mod verify
+    - name: Format check
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "Code is not formatted properly:"
+          gofmt -s -l .
+          exit 1
+        fi
+    - name: Vet
+      run: go vet ./...
+    - name: Run tests
+      env:
+        MONGO_HOST: localhost
+        MONGO_PORT: 27017
+        MONGO_USERNAME: testuser
+        MONGO_PASSWORD: testpass
+        MONGO_AUTH_DATABASE: admin
+      run: go test -v -timeout 30s ./...
+    - name: Run tests with race detection
+      env:
+        MONGO_HOST: localhost
+        MONGO_PORT: 27017
+        MONGO_USERNAME: testuser
+        MONGO_PASSWORD: testpass
+        MONGO_AUTH_DATABASE: admin
+      run: go test -race -timeout 30s ./...
+    - name: Run benchmarks
+      env:
+        MONGO_HOST: localhost
+        MONGO_PORT: 27017
+        MONGO_USERNAME: testuser
+        MONGO_PASSWORD: testpass
+        MONGO_AUTH_DATABASE: admin
+      run: go test -bench=. -benchtime=1s ./...
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.x'
+        cache: true
+        cache-dependency-path: |
+          go.mod
+          **/go.mod
+          go.sum
+          **/go.sum
+    - name: Run tests with coverage
+      env:
+        MONGO_HOST: localhost
+        MONGO_PORT: 27017
+        MONGO_USERNAME: testuser
+        MONGO_PASSWORD: testpass
+        MONGO_AUTH_DATABASE: admin
+      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.x'
+        cache: true
+        cache-dependency-path: |
+          go.mod
+          **/go.mod
+          go.sum
+          **/go.sum
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.64.8
+        args: --timeout=5m
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.x'
+        cache: true
+        cache-dependency-path: |
+          go.mod
+          **/go.mod
+          go.sum
+          **/go.sum
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: './...'

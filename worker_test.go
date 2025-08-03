@@ -55,16 +55,16 @@ func TestFilterOutByIndicesEmpty(t *testing.T) {
 
 func TestJitter(t *testing.T) {
 	base := 100 * time.Millisecond
-	max := 200 * time.Millisecond
+	maxDuration := 200 * time.Millisecond
 
 	// Test multiple times to ensure we get variation
 	results := make(map[time.Duration]bool)
 	for i := 0; i < 100; i++ {
-		result := jitter(base, max)
+		result := jitter(base, maxDuration)
 
 		// Should be between 75% and 125% of base, but capped at max
 		minExpected := time.Duration(float64(base) * 0.75)
-		maxExpected := max
+		maxExpected := maxDuration
 
 		if result < minExpected || result > maxExpected {
 			t.Fatalf("Jitter result %v outside expected range [%v, %v]", result, minExpected, maxExpected)
@@ -81,12 +81,12 @@ func TestJitter(t *testing.T) {
 
 func TestJitterRespectMax(t *testing.T) {
 	base := 300 * time.Millisecond
-	max := 200 * time.Millisecond // max < base
+	maxDuration := 200 * time.Millisecond // max < base
 
 	for i := 0; i < 10; i++ {
-		result := jitter(base, max)
-		if result > max {
-			t.Fatalf("Jitter result %v exceeds max %v", result, max)
+		result := jitter(base, maxDuration)
+		if result > maxDuration {
+			t.Fatalf("Jitter result %v exceeds max %v", result, maxDuration)
 		}
 	}
 }
@@ -131,7 +131,8 @@ func TestWorkerIntegration(t *testing.T) {
 		time.Sleep(200 * time.Millisecond)
 
 		// Verify documents were inserted
-		count, err := coll.CountDocuments(context.Background(), map[string]any{"_id": map[string]any{"$in": []int{101, 102, 103}}})
+		filter := map[string]any{"_id": map[string]any{"$in": []int{101, 102, 103}}}
+		count, err := coll.CountDocuments(context.Background(), filter)
 		if err != nil {
 			t.Fatalf("Failed to count documents: %v", err)
 		}
@@ -198,7 +199,8 @@ func TestWorkerIntegration(t *testing.T) {
 		// For a simple duplicate key error on a single doc, it should be filtered out
 		// and not appear in the failure sink
 		if duplicateFailures > 0 {
-			t.Logf("Note: Got %d duplicate key failures in sink - this is acceptable for complex bulk operations", duplicateFailures)
+			msg := "Note: Got %d duplicate key failures in sink - this is acceptable for complex bulk operations"
+			t.Logf(msg, duplicateFailures)
 		}
 	})
 }
