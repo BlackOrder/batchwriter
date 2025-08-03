@@ -93,6 +93,38 @@ func TestNewJSONSink(t *testing.T) {
 			t.Errorf("Expected minimum RotateBytes %d, got %d", expectedMin, sink.cfg.RotateBytes)
 		}
 	})
+
+	t.Run("rejects path traversal in directory", func(t *testing.T) {
+		cfg := &JSONDumpConfig{
+			Dir: "../../../etc",
+		}
+
+		sink, err := newJSONSink[testDoc](cfg, nopLogger{})
+		if err == nil {
+			defer sink.Close()
+			t.Fatal("Expected error for path traversal in directory")
+		}
+		if !strings.Contains(err.Error(), "invalid directory path") {
+			t.Errorf("Expected 'invalid directory path' error, got: %v", err)
+		}
+	})
+
+	t.Run("rejects path traversal in file prefix", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfg := &JSONDumpConfig{
+			Dir:        tmpDir,
+			FilePrefix: "../malicious",
+		}
+
+		sink, err := newJSONSink[testDoc](cfg, nopLogger{})
+		if err == nil {
+			defer sink.Close()
+			t.Fatal("Expected error for path traversal in file prefix")
+		}
+		if !strings.Contains(err.Error(), "invalid file prefix") {
+			t.Errorf("Expected 'invalid file prefix' error, got: %v", err)
+		}
+	})
 }
 
 func TestJSONSinkDump(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -46,8 +47,20 @@ func newJSONSink[T any](cfg *JSONDumpConfig, logger Logger) (*jsonSink[T], error
 	if cfg == nil || cfg.Dir == "" {
 		return nil, nil // disabled
 	}
+
+	// Validate directory path to prevent path traversal attacks
+	cleanDir := filepath.Clean(cfg.Dir)
+	if strings.Contains(cleanDir, "..") {
+		return nil, fmt.Errorf("invalid directory path: %s", cfg.Dir)
+	}
+	cfg.Dir = cleanDir
+
 	if cfg.FilePrefix == "" {
 		cfg.FilePrefix = "batchwriter"
+	}
+	// Validate file prefix to prevent path traversal
+	if strings.Contains(cfg.FilePrefix, "/") || strings.Contains(cfg.FilePrefix, "\\") {
+		return nil, fmt.Errorf("invalid file prefix: %s", cfg.FilePrefix)
 	}
 	if cfg.FsyncEvery <= 0 {
 		cfg.FsyncEvery = 200 // flush every 200 records
@@ -60,7 +73,7 @@ func newJSONSink[T any](cfg *JSONDumpConfig, logger Logger) (*jsonSink[T], error
 	if logger == nil {
 		logger = nopLogger{} // no-op logger
 	}
-	if err := os.MkdirAll(cfg.Dir, 0o755); err != nil {
+	if err := os.MkdirAll(cfg.Dir, 0o750); err != nil {
 		return nil, err
 	}
 	js := &jsonSink[T]{cfg: *cfg, l: logger}
@@ -84,7 +97,8 @@ func (js *jsonSink[T]) rotateLocked() error {
 	}
 	name := time.Now().UTC().Format("20060102-150405")
 	path := filepath.Join(js.cfg.Dir, fmt.Sprintf("%s-%s.ndjson", js.cfg.FilePrefix, name))
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
+	// #nosec G304 - path is constructed from validated config (no path traversal) and timestamp
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return err
 	}

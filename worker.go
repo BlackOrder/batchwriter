@@ -153,6 +153,7 @@ func jitter(d, maxDuration time.Duration) time.Duration {
 	}
 
 	// Generate a random factor between 0.75 and 1.25
+	// #nosec G404 - math/rand is sufficient for jitter timing, crypto/rand not needed
 	factor := 0.75 + rand.Float64()*0.5
 
 	// Apply the factor and ensure we don't exceed max
