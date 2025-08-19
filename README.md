@@ -9,6 +9,7 @@ A thread-safe, batch processing writer for MongoDB with configurable batching, t
 - **Failure handling**: Configurable sink for handling failed batches
 - **Graceful shutdown**: Proper cleanup and remaining item processing
 - **MongoDB integration**: Built specifically for MongoDB collections
+ - **Non-blocking first push**: (v0.1.1) `Push` mirrors `PushMany` semantics—if there is room in the queue it enqueues even after shutdown has begun; cancellation is only honored when the call would block.
 
 ## Testing Requirements
 

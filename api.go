@@ -8,6 +8,15 @@ import (
 // If the writer's shutdown context or the call context is canceled,
 // the item is dumped and the corresponding error is returned.
 func (w *Writer[T]) Push(ctx context.Context, evt T) error {
+	// Fast path: try non-blocking enqueue. This allows enqueueing even if
+	// shutdown context is already canceled, as long as there's still buffer space.
+	select {
+	case w.ch <- evt:
+		return nil
+	default:
+		// would block, fall through to blocking select with cancellation awareness
+	}
+
 	select {
 	case w.ch <- evt:
 		return nil
