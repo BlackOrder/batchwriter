@@ -96,6 +96,42 @@ func (w *Writer[T]) Close(ctx context.Context) error {
 	}
 }
 
+// HealthStatus provides operational metrics for monitoring and health checks
+type HealthStatus struct {
+	QueueDepth     int  `json:"queue_depth"`     // Current items in queue
+	QueueCapacity  int  `json:"queue_capacity"`  // Maximum queue capacity
+	QueueUtilPct   int  `json:"queue_util_pct"`  // Queue utilization percentage
+	Workers        int  `json:"workers"`         // Number of active workers
+	IsShuttingDown bool `json:"is_shutting_down"` // Whether shutdown has been initiated
+}
+
+// Health returns current operational status for monitoring and health checks.
+// This method is safe to call concurrently and provides non-blocking health information.
+func (w *Writer[T]) Health() HealthStatus {
+	queueDepth := len(w.ch)
+	queueCapacity := cap(w.ch)
+	utilizationPct := 0
+	if queueCapacity > 0 {
+		utilizationPct = (queueDepth * 100) / queueCapacity
+	}
+	
+	// Check if shutdown context is done
+	isShuttingDown := false
+	select {
+	case <-w.ctx.Done():
+		isShuttingDown = true
+	default:
+	}
+	
+	return HealthStatus{
+		QueueDepth:     queueDepth,
+		QueueCapacity:  queueCapacity,
+		QueueUtilPct:   utilizationPct,
+		Workers:        w.cfg.Workers,
+		IsShuttingDown: isShuttingDown,
+	}
+}
+
 func (w *Writer[T]) dumpFailed(batch []T, reason string, cause error) {
 	if len(batch) == 0 {
 		return

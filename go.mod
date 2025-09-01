@@ -1,6 +1,8 @@
 module github.com/blackorder/batchwriter
 
-go 1.24.5
+go 1.23.0
+
+toolchain go1.24.6
 
 require go.mongodb.org/mongo-driver/v2 v2.3.0
 
