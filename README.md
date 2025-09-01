@@ -2,6 +2,29 @@
 
 A thread-safe, batch processing writer for MongoDB with configurable batching, timeouts, and failure handling.
 
+## Production Readiness
+
+**Status: Production Ready with Recommendations** ✅
+
+This package has undergone comprehensive analysis and testing for production use. See [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) for detailed analysis and recommendations.
+
+### Key Production Considerations
+
+- **Go Version**: Requires Go 1.22+ (updated from 1.24.5 for broader compatibility)
+- **Memory Usage**: Configure `MaxBatch`, `MaxBatchBytes`, and `QueueSize` based on your document sizes
+- **Monitoring**: Add metrics monitoring for queue depth, retry rates, and dump frequencies  
+- **Configuration**: Use provided [production configuration examples](examples_config.go)
+
+### Quick Production Setup
+
+```go
+// Use pre-configured production settings
+cfg := batchwriter.HighThroughputSmallDocuments  // or other examples
+cfg.JSONDump.Dir = "/var/log/myapp/batchwriter-failures"
+
+writer, err := batchwriter.NewWriter[MyDocument](ctx, collection, cfg)
+```
+
 ## Features
 
 - **Thread-safe**: Safe for concurrent use across multiple goroutines

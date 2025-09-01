@@ -36,9 +36,10 @@ type JSONDumpConfig struct {
 
 type Config struct {
 	MaxBatch        int           // e.g. 500
+	MaxBatchBytes   int64         // e.g. 1024*1024 (1MB) - memory-based limit  
 	MaxDelay        time.Duration // e.g. 100 * time.Millisecond
 	QueueSize       int           // e.g. 100_000
-	Retries         int           // e.g. 5
+	Retries         int           // e.g. 5 (use -1 for unlimited, capped at 1000)
 	RetryBackoffMin time.Duration // e.g. 50 * time.Millisecond
 	RetryBackoffMax time.Duration // e.g. 2 * time.Second
 	RetryTimeout    time.Duration // e.g. 5 * time.Second

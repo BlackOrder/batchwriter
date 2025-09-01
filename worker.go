@@ -77,7 +77,13 @@ func (w *Writer[T]) insertWithRetry(docs []T) ([]T, error) {
 	backoff := w.cfg.RetryBackoffMin
 	var lastErr error
 
-	for attempt := 0; attempt <= w.cfg.Retries || w.cfg.Retries < 0; attempt++ {
+	// Apply reasonable limits to prevent infinite retry loops
+	maxRetries := w.cfg.Retries
+	if maxRetries < 0 {
+		maxRetries = 1000 // Reasonable upper bound for "unlimited" retries
+	}
+	
+	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if len(remaining) == 0 {
 			return nil, nil
 		}
@@ -122,7 +128,15 @@ func (w *Writer[T]) insertWithRetry(docs []T) ([]T, error) {
 			}
 		}
 
-		time.Sleep(jitter(backoff, w.cfg.RetryBackoffMax))
+		// Use context-aware sleep to respect shutdown signals
+		select {
+		case <-time.After(jitter(backoff, w.cfg.RetryBackoffMax)):
+			// backoff completed normally
+		case <-w.ctx.Done():
+			// shutdown requested during backoff
+			return remaining, w.ctx.Err()
+		}
+		
 		backoff *= 2
 		if backoff > w.cfg.RetryBackoffMax {
 			backoff = w.cfg.RetryBackoffMax
